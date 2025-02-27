@@ -4,7 +4,7 @@
 
 ## Live Demo
 
-Visit [https://heic.darkspacelabs.com](https://heic.darkspacelabs.com) to use the converter online.
+Visit [https://freeheicconvert.com](https://freeheicconvert.com) to use the converter online.
 
 ## Features
 
