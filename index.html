@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HEIC Multi-Format Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --background-dark: #0d1117;
+            --card-background: #141b26;
+            --border-glow: #00e5ff;
+            --text-primary: #ffffff;
+            --text-secondary: #8b949e;
+            --accent-color: #00e5ff;
+            --error-color: #ff4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .converter-card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.1),
+                        0 0 20px rgba(0, 229, 255, 0.1);
+        }
+
+        .format-selector {
+            background-color: rgba(0, 229, 255, 0.05);
+            color: var(--text-primary);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select {
+            background-color: var(--card-background);
+            color: var(--text-primary);
+            border: 1px solid var(--border-glow);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .limit-info {
+            background-color: rgba(0, 229, 255, 0.05);
+            color: var(--text-secondary);
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .drop-zone {
+            border: 2px dashed var(--text-secondary);
+            border-radius: 4px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--border-glow);
+            background-color: rgba(0, 229, 255, 0.05);
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #status {
+            text-align: center;
+            color: var(--text-secondary);
+            margin: 20px 0;
+        }
+
+        .preview-area {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .preview-item {
+            background-color: rgba(0, 229, 255, 0.05);
+            border: 1px solid var(--text-secondary);
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .preview-item img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: 10px;
+        }
+
+        .button {
+            background-color: var(--accent-color);
+            color: var(--background-dark);
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+<header style="text-align: center; margin-bottom: 30px;">
+    <a href="https://darkspacelabs.com" target="_blank">
+        <img src="https://darkspacelabs.com/assets/logo.png" alt="Dark Space Labs" style="
+            max-width: 150px;
+            filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.5));
+            transition: filter 0.3s ease;
+        "
+        onmouseover="this.style.filter='drop-shadow(0 0 15px rgba(0, 229, 255, 0.8))'"
+        onmouseout="this.style.filter='drop-shadow(0 0 10px rgba(0, 229, 255, 0.5))'"
+        >
+    </a>
+</header>
+    <div class="container">
+        <h1>HEIC Multi-Format Converter</h1>
+        <p class="subtitle">Convert your HEIC images to various formats</p>
+
+        <div class="converter-card">
+            <div class="format-selector">
+                <label for="formatSelect">Convert to:</label>
+                <select id="formatSelect">
+                    <option value="image/jpeg">JPG</option>
+                    <option value="image/png">PNG</option>
+                    <option value="application/pdf">PDF</option>
+                    <option value="image/svg+xml">SVG</option>
+                </select>
+            </div>
+
+            <div class="limit-info" id="limitInfo">30 conversions remaining today</div>
+            
+            <div class="drop-zone" id="dropZone">
+                <p>Drop HEIC files here<br>or click to select</p>
+                <input type="file" id="fileInput" accept=".heic,.HEIC" multiple>
+            </div>
+            
+            <div id="status"></div>
+            <div class="preview-area" id="previewArea"></div>
+        </div>
+    </div>
+
+    <script>
+        // Rate limiting configuration
+        const DAILY_LIMIT = 30;
+        const MS_PER_DAY = 86400000;
+
+        function initializeRateLimit() {
+            const stored = localStorage.getItem('conversionData');
+            if (stored) {
+                const data = JSON.parse(stored);
+                const now = Date.now();
+                if (now - data.timestamp > MS_PER_DAY) {
+                    const newData = { count: 0, timestamp: now };
+                    localStorage.setItem('conversionData', JSON.stringify(newData));
+                    return newData;
+                }
+                return data;
+            }
+            const newData = { count: 0, timestamp: now };
+            localStorage.setItem('conversionData', JSON.stringify(newData));
+            return newData;
+        }
+
+        function updateRateLimit(count) {
+            const data = { count, timestamp: Date.now() };
+            localStorage.setItem('conversionData', JSON.stringify(data));
+            updateLimitDisplay();
+        }
+
+        function getRemainingConversions() {
+            const data = initializeRateLimit();
+            return DAILY_LIMIT - data.count;
+        }
+
+        function updateLimitDisplay() {
+            const remaining = getRemainingConversions();
+            document.getElementById('limitInfo').textContent = 
+                `${remaining} conversions remaining today`;
+        }
+
+        // Initialize
+        updateLimitDisplay();
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById('status');
+        const previewArea = document.getElementById('previewArea');
+        const formatSelect = document.getElementById('formatSelect');
+
+        async function checkFileType(file) {
+            try {
+                const buffer = await file.slice(0, 12).arrayBuffer();
+                const arr = new Uint8Array(buffer);
+
+                if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) {
+                    throw new Error('This file appears to be a PNG file with a .heic extension. Please select a genuine HEIC file.');
+                }
+
+                if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) {
+                    throw new Error('This file appears to be a JPEG file with a .heic extension. Please select a genuine HEIC file.');
+                }
+
+                if (arr[4] !== 0x66 || arr[5] !== 0x74 || arr[6] !== 0x79 || arr[7] !== 0x70) {
+                    throw new Error('This file has a .heic extension but does not appear to be a valid HEIC file.');
+                }
+
+                return true;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        async function convertHeicToFormat(file, format) {
+            try {
+                await checkFileType(file);
+
+                const jpegBlob = await heic2any({
+                    blob: file,
+                    toType: "image/jpeg",
+                    quality: 0.8
+                });
+
+                // If target format is JPEG, return as is
+                if (format === 'image/jpeg') {
+                    return jpegBlob;
+                }
+
+                // Convert JPEG to target format
+                const img = document.createElement('img');
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(jpegBlob);
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+
+                switch (format) {
+                    case 'image/png':
+                        return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    
+                    case 'image/svg+xml':
+                        // Basic SVG conversion (creates a container for the image)
+                        const svgString = `
+                            <svg xmlns="http://www.w3.org/2000/svg" width="${img.width}" height="${img.height}">
+                                <image href="${canvas.toDataURL('image/png')}" width="100%" height="100%"/>
+                            </svg>
+                        `;
+                        return new Blob([svgString], { type: 'image/svg+xml' });
+                    
+                    case 'application/pdf':
+                        const pdf = new jspdf.jsPDF({
+                            orientation: img.width > img.height ? 'landscape' : 'portrait',
+                            unit: 'px',
+                            format: [img.width, img.height]
+                        });
+                        pdf.addImage(canvas.toDataURL('image/jpeg'), 'JPEG', 0, 0, img.width, img.height);
+                        return new Blob([pdf.output('blob')], { type: 'application/pdf' });
+                }
+            } catch (error) {
+                console.error('Conversion error:', error);
+                throw error;
+            }
+        }
+
+        // Event listeners for drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'));
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'));
+        });
+
+        dropZone.addEventListener('drop', handleDrop);
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        function handleDrop(e) {
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        }
+
+        async function handleFiles(files) {
+            if (files.length === 0) return;
+
+            const remaining = getRemainingConversions();
+            if (remaining <= 0) {
+                status.textContent = 'Daily conversion limit reached. Please try again tomorrow.';
+                return;
+            }
+
+            const filesToProcess = Array.from(files).slice(0, remaining);
+            status.textContent = `Processing ${filesToProcess.length} file(s)...`;
+
+            let successfulConversions = 0;
+            const selectedFormat = formatSelect.value;
+
+            for (const file of filesToProcess) {
+                const previewItem = createPreviewItem(file.name);
+                previewArea.appendChild(previewItem);
+
+                try {
+                    const convertedBlob = await convertHeicToFormat(file, selectedFormat);
+                    const url = URL.createObjectURL(convertedBlob);
+                    updatePreviewItem(previewItem, url, file.name, selectedFormat);
+                    successfulConversions++;
+                } catch (error) {
+                    previewItem.querySelector('.status').textContent = error.message || 'Conversion failed';
+                }
+            }
+
+            const data = initializeRateLimit();
+            updateRateLimit(data.count + successfulConversions);
+
+            status.textContent = successfulConversions > 0 ? 
+                'Conversion complete!' : 
+                'No files were successfully converted. Please check the file format.';
+            fileInput.value = '';
+        }
+
+        function getFileExtension(format) {
+            switch (format) {
+                case 'image/jpeg': return '.jpg';
+                case 'image/png': return '.png';
+                case 'image/svg+xml': return '.svg';
+                case 'application/pdf': return '.pdf';
+                default: return '.jpg';
+            }
+        }
+
+        function createPreviewItem(fileName) {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            div.innerHTML = `
+                <p>${fileName}</p>
+                <p class="status">Converting...</p>
+            `;
+            return div;
+        }
+
+        function updatePreviewItem(previewItem, url, originalName, format) {
+            const extension = getFileExtension(format);
+            
+            if (format === 'application/pdf') {
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.style.width = '100%';
+                iframe.style.height = '200px';
+                iframe.style.border = 'none';
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'button';
+                downloadBtn.textContent = 'Download PDF';
+                
+                downloadBtn.onclick = () => {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = originalName.replace(/\.heic$/i, extension);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+
+                previewItem.innerHTML = '';
+                previewItem.appendChild(iframe);
+                previewItem.appendChild(downloadBtn);
+            } else {
+                const img = document.createElement('img');
+                img.src = url;
+                
+                const downloadBtn = document.createElement('button');
+                downloadBtn.className = 'button';
+                downloadBtn.textContent = `Download ${extension.toUpperCase().slice(1)}`;
+                
+                downloadBtn.onclick = () => {
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = originalName.replace(/\.heic$/i, extension);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                };
+
+                previewItem.innerHTML = '';
+                previewItem.appendChild(img);
+                previewItem.appendChild(downloadBtn);
+            }
+        }
+    </script>
+	<div style="
+    background-color: rgba(0, 229, 255, 0.05);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 40px auto;
+    max-width: 800px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+">
+    <h3 style="color: var(--text-primary); margin-top: 0;">🔒 Privacy & Security</h3>
+    <p>
+        Your privacy matters to us. This converter works entirely in your browser - your files are never uploaded to any server 
+        or stored anywhere online. Here's how it works:
+    </p>
+    <ul style="margin: 15px 0;">
+        <li>All conversion happens locally on your device</li>
+        <li>Your original and converted files never leave your computer</li>
+        <li>Previews are temporary and exist only in your browser's memory</li>
+        <li>All data is automatically cleared when you close or refresh the page</li>
+    </ul>
+    <p>
+        You can convert your photos with complete confidence knowing they remain private and secure on your device throughout 
+        the entire process.
+    </p>
+</div>
+<footer style="
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+">
+    <p>This free tool is brought to you by <a href="https://darkspacelabs.com" target="_blank" style="
+        color: var(--accent-color);
+        text-decoration: none;
+        transition: opacity 0.3s ease;
+    " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Dark Space Labs</a></p>
+</footer>
+</body>
+</html>
