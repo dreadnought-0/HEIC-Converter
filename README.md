@@ -1,7 +1,5 @@
 # HEIC Multi-Format Converter
 
-![Dark Space Labs Logo](logo.png)
-
 **A privacy-focused, browser-based tool to convert HEIC images to JPG, PNG, PDF, and SVG formats without uploading files to any server.**
 
 ## Live Demo
